@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-orders-table
+      author: Kharlamova
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ;
+            sql: |
+              CREATE TABLE orders (
+                  id SERIAL PRIMARY KEY,
+                  user_id BIGINT NOT NULL,
+                  status VARCHAR(100) NOT NULL,
+                  total_price FLOAT NOT NULL,
+                  deleted BOOLEAN NOT NULL,
+                  created_at TIMESTAMP,
+                  updated_at TIMESTAMP
+              );
+
+              CREATE INDEX idx_user_id
+              ON orders(user_id);
