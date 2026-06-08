@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-order-items-table
+      author: Kharlamova
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ;
+            sql: |
+              CREATE TABLE order_items (
+                  id SERIAL PRIMARY KEY,
+                  order_id BIGINT NOT NULL,
+                  item_id BIGINT NOT NULL,
+                  quantity INT NOT NULL,
+                  created_at TIMESTAMP,
+                  updated_at TIMESTAMP,
+              
+                  CONSTRAINT fk_order_items_items
+                  FOREIGN KEY (item_id)
+                  REFERENCES items(id)
+                  ON DELETE CASCADE,
+              
+                  CONSTRAINT fk_order_items_orders
+                  FOREIGN KEY (order_id)
+                  REFERENCES orders(id)
+                  ON DELETE CASCADE
+              );
+
+              CREATE INDEX idx_order_id
+              ON order_items(order_id);
+              
+              CREATE INDEX idx_item_id
+              ON order_items(item_id);

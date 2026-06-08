@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-items-table
+      author: Kharlamova
+      changes:
+        - sql:
+            splitStatements: true
+            endDelimiter: ;
+            sql: |
+              CREATE TABLE items (
+                  id SERIAL PRIMARY KEY,
+                  name VARCHAR(100) NOT NULL UNIQUE,
+                  price float,
+                  created_at TIMESTAMP,
+                  updated_at TIMESTAMP
+              );
+
+              CREATE INDEX idx_item_name
+              ON items(name);
