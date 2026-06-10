@@ -26,6 +26,6 @@ public class OrderItem extends BaseEntity {
     @JoinColumn(name = "item_id", nullable = false)
     private Item item;
 
-    @Column(name = "order_id", nullable = false)
+    @Column(nullable = false)
     private int quantity;
 }
