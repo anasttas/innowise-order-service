@@ -5,10 +5,12 @@ import com.kharlamova.order_service.dto.ItemDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
+
 public interface ItemService {
     ItemDto getItem(Long id);
 
-    Page<ItemDto> getAllItems(String name, float minPrice, float maxPrice, Pageable pageable);
+    Page<ItemDto> getAllItems(String name, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable);
 
     ItemDto createItem(ItemDto itemDto);
 

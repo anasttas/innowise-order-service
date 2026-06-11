@@ -4,6 +4,7 @@ import com.kharlamova.order_service.entity.OrderStatus;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class OrderResponse {
 
     private OrderStatus status;
 
-    private float totalPrice;
+    private BigDecimal totalPrice;
 
     private UserDto user;
 

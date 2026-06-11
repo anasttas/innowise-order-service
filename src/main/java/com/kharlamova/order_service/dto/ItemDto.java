@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -23,7 +24,7 @@ public class ItemDto {
     private String name;
 
     @Positive(message = "Price should be positive")
-    private float price;
+    private BigDecimal price;
 
     private LocalDateTime createdAt;
 

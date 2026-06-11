@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +32,7 @@ public class Order extends BaseEntity {
     private OrderStatus status;
 
     @Column(name = "total_price", nullable = false)
-    private float totalPrice;
+    private BigDecimal totalPrice;
 
     @Column(nullable = false)
     private boolean deleted;
