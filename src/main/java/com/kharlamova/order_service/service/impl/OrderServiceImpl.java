@@ -6,6 +6,8 @@ import com.kharlamova.order_service.entity.Item;
 import com.kharlamova.order_service.entity.Order;
 import com.kharlamova.order_service.entity.OrderItem;
 import com.kharlamova.order_service.entity.OrderStatus;
+import com.kharlamova.order_service.exception.ItemNotFoundException;
+import com.kharlamova.order_service.exception.OrderNotFoundException;
 import com.kharlamova.order_service.mapper.OrderMapper;
 import com.kharlamova.order_service.repository.ItemRepository;
 import com.kharlamova.order_service.repository.OrderRepository;
@@ -18,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +40,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse getOrder(Long id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
         UserDto userDto = userServiceClient.getUserById(order.getUserId());
 
@@ -79,12 +82,12 @@ public class OrderServiceImpl implements OrderService {
         Order order = Order.builder()
                 .userId(user.getId())
                 .status(orderDto.getStatus())
-                .totalPrice(0)
+                .totalPrice(BigDecimal.ZERO)
                 .build();
 
         List<OrderItem> orderItems = convertOrderItems(orderDto, order);
 
-        float totalPrice = calculateTotalPrice(orderItems);
+        BigDecimal totalPrice = calculateTotalPrice(orderItems);
 
         order.setOrderItem(orderItems);
         order.setTotalPrice(totalPrice);
@@ -100,7 +103,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse updateOrder(OrderRequest orderDto, Long id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
         UserDto userDto = userServiceClient.getUserByEmail(orderDto.getUserEmail());
 
@@ -121,7 +124,7 @@ public class OrderServiceImpl implements OrderService {
 
     public AskDto deleteOrder(Long id) {
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
         orderRepository.delete(order);
 
@@ -132,7 +135,7 @@ public class OrderServiceImpl implements OrderService {
         return orderDto.getOrderItem().stream()
                 .map(orderItemRequest -> {
                     Item item = itemRepository.findById(orderItemRequest.getItemId())
-                            .orElseThrow(() -> new RuntimeException("Item not found"));
+                            .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
                     return OrderItem.builder()
                             .item(item)
@@ -143,9 +146,11 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private float calculateTotalPrice(List<OrderItem> orderItems) {
+    private BigDecimal calculateTotalPrice(List<OrderItem> orderItems) {
         return orderItems.stream()
-                .map(orderItem -> orderItem.getItem().getPrice() * orderItem.getQuantity())
-                .reduce(0f, Float::sum);
+                .map(orderItem ->
+                        orderItem.getItem().getPrice()
+                                .multiply(BigDecimal.valueOf(orderItem.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

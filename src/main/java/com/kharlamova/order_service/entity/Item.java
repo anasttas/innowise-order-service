@@ -3,6 +3,7 @@ package com.kharlamova.order_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class Item extends BaseEntity {
     private String name;
 
     @Column(nullable = false)
-    private float price;
+    private BigDecimal price;
 
     @OneToMany(
             mappedBy = "item",
