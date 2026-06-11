@@ -2,13 +2,17 @@ package com.kharlamova.order_service.dto;
 
 import com.kharlamova.order_service.entity.OrderStatus;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class OrderRequest {
     private Long id;
 
