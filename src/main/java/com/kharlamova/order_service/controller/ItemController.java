@@ -46,8 +46,8 @@ public class ItemController {
                 .body(createdItem);
     }
 
-    @PatchMapping("/{order_id}")
-    public ResponseEntity<ItemDto> updateItem(@PathVariable("order_id") Long itemId,
+    @PatchMapping("/{item_id}")
+    public ResponseEntity<ItemDto> updateItem(@PathVariable("item_id") Long itemId,
                                                      @RequestBody @Valid ItemDto itemDto
     ) {
         ItemDto updatedItem = itemService.updateItem(itemDto, itemId);
@@ -57,8 +57,8 @@ public class ItemController {
                 .body(updatedItem);
     }
 
-    @DeleteMapping("/{order_id}")
-    public ResponseEntity<AskDto> deleteItem(@PathVariable("order_id") Long itemId) {
+    @DeleteMapping("/{item_id}")
+    public ResponseEntity<AskDto> deleteItem(@PathVariable("item_id") Long itemId) {
         AskDto deletedUserDto = itemService.deleteItem(itemId);
 
         return ResponseEntity
