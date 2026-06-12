@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16
+    container_name: db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: order_db
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - ./docker/db/init-order.sql:/docker-entrypoint-initdb.d/init-order.sql
+
+  order-service:
+    build: .
+    container_name: order-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - db
+    env_file:
+      - .env.docker

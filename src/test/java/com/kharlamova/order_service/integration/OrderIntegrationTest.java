@@ -71,19 +71,11 @@ class OrderIntegrationTest {
                     .withUsername("test")
                     .withPassword("test");
 
-    @Container
-    static GenericContainer<?> redis =
-            new GenericContainer<>("redis:8.2.1")
-                    .withExposedPorts(6379);
-
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
-
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
 
         registry.add("user.service.url", () -> "http://localhost:8080");
     }
