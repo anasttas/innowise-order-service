@@ -4,6 +4,7 @@ import com.kharlamova.order_service.dto.AskDto;
 import com.kharlamova.order_service.dto.OrderRequest;
 import com.kharlamova.order_service.dto.OrderResponse;
 import com.kharlamova.order_service.entity.OrderStatus;
+import com.kharlamova.order_service.security.UserPrincipal;
 import com.kharlamova.order_service.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -21,11 +24,17 @@ import java.time.LocalDateTime;
 public class OrderController {
     private final OrderService orderService;
 
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping("/{order_id}")
-    public ResponseEntity<OrderResponse> getOrderById(@PathVariable("order_id") Long id) {
-        return ResponseEntity.ok(orderService.getOrder(id));
+    public ResponseEntity<OrderResponse> getOrderById(@PathVariable("order_id") Long id,
+                                                      Authentication authentication
+    ) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        return ResponseEntity.ok(orderService.getOrder(id, principal));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<OrderResponse>> getAllOrders(Pageable pageable,
                                   @RequestParam(required = false) OrderStatus status,
@@ -39,26 +48,36 @@ public class OrderController {
                 .body(orderResponses);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @PostMapping
-    public ResponseEntity<OrderResponse> addOrder(@RequestBody @Valid OrderRequest orderRequest) {
-        OrderResponse createdOrder = orderService.createOrder(orderRequest);
+    public ResponseEntity<OrderResponse> addOrder(@RequestBody @Valid OrderRequest orderRequest,
+                                                  Authentication authentication
+    ) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        OrderResponse createdOrder = orderService.createOrder(orderRequest, principal);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(createdOrder);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @PatchMapping("/{order_id}")
     public ResponseEntity<OrderResponse> updateOrder(@PathVariable("order_id") Long orderId,
-                                              @RequestBody @Valid OrderRequest orderRequest
+                                              @RequestBody @Valid OrderRequest orderRequest,
+                                              Authentication authentication
     ) {
-        OrderResponse updatedOrder = orderService.updateOrder(orderRequest, orderId);
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+
+        OrderResponse updatedOrder = orderService.updateOrder(orderRequest, orderId, principal);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(updatedOrder);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{order_id}")
     public ResponseEntity<AskDto> deleteOrder(@PathVariable("order_id") Long orderId) {
         AskDto deletedUserDto = orderService.deleteOrder(orderId);
@@ -66,5 +85,17 @@ public class OrderController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(deletedUserDto);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or #userId == authentication.principal.userId")
+    @GetMapping("/users")
+    public ResponseEntity<Page<OrderResponse>> getAllOrdersByUserId(@RequestParam Long userId,
+                                                                    Pageable pageable
+    ) {
+        Page<OrderResponse> orderResponses = orderService.getAllOrdersByUserId(userId, pageable);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(orderResponses);
     }
 }

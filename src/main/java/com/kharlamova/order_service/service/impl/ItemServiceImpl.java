@@ -61,7 +61,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto updateItem(ItemDto itemDto, Long id) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
         item.setPrice(itemDto.getPrice());
 
@@ -74,7 +74,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public AskDto deleteItem(Long id) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Item not found"));
+                .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
         itemRepository.delete(item);
 
