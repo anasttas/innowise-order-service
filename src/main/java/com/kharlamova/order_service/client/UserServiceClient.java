@@ -1,6 +1,7 @@
 package com.kharlamova.order_service.client;
 
 import com.kharlamova.order_service.dto.UserDto;
+import com.kharlamova.order_service.exception.UserServiceUnavailableException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,10 +39,10 @@ public class UserServiceClient {
     }
 
     public UserDto fallbackGetUserByEmail(String email, Exception ex) {
-        throw new RuntimeException("User service unavailable");
+        throw new UserServiceUnavailableException("User service is unavailable", ex);
     }
 
     public UserDto fallbackGetUserById(Long id, Exception ex) {
-        throw new RuntimeException("User service unavailable", ex);
+        throw new UserServiceUnavailableException("User service unavailable", ex);
     }
 }

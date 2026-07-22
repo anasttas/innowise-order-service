@@ -8,9 +8,11 @@ import com.kharlamova.order_service.entity.OrderItem;
 import com.kharlamova.order_service.entity.OrderStatus;
 import com.kharlamova.order_service.exception.ItemNotFoundException;
 import com.kharlamova.order_service.exception.OrderNotFoundException;
+import com.kharlamova.order_service.kafka.CreatePaymentEvent;
 import com.kharlamova.order_service.mapper.OrderMapper;
 import com.kharlamova.order_service.repository.ItemRepository;
 import com.kharlamova.order_service.repository.OrderRepository;
+import com.kharlamova.order_service.security.UserPrincipal;
 import com.kharlamova.order_service.service.OrderService;
 import com.kharlamova.order_service.specification.OrderSpecification;
 import jakarta.transaction.Transactional;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,9 +41,14 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
 
     @Override
-    public OrderResponse getOrder(Long id) {
+    public OrderResponse getOrder(Long id, UserPrincipal userPrincipal) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        if (!userPrincipal.isAdmin()
+                && !order.getUserId().equals(userPrincipal.getUserId())) {
+            throw new AccessDeniedException("Access denied");
+        }
 
         UserDto userDto = userServiceClient.getUserById(order.getUserId());
 
@@ -76,8 +84,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderResponse createOrder(OrderRequest orderDto) {
+    public OrderResponse createOrder(OrderRequest orderDto, UserPrincipal userPrincipal) {
         UserDto user = userServiceClient.getUserByEmail(orderDto.getUserEmail());
+
+        if (!userPrincipal.isAdmin()
+                && !user.getId().equals(userPrincipal.getUserId())) {
+            throw new AccessDeniedException("Access denied");
+        }
 
         Order order = Order.builder()
                 .userId(user.getId())
@@ -101,11 +114,16 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public OrderResponse updateOrder(OrderRequest orderDto, Long id) {
+    public OrderResponse updateOrder(OrderRequest orderDto, Long id, UserPrincipal userPrincipal) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
 
         UserDto userDto = userServiceClient.getUserByEmail(orderDto.getUserEmail());
+
+        if (!userPrincipal.isAdmin()
+                && !userDto.getId().equals(userPrincipal.getUserId())) {
+            throw new AccessDeniedException("Access denied");
+        }
 
         order.setUserId(userDto.getId());
         order.setStatus(orderDto.getStatus());
@@ -122,6 +140,7 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.makeOrderDto(saved, userDto);
     }
 
+    @Transactional
     public AskDto deleteOrder(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found"));
@@ -129,6 +148,19 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.delete(order);
 
         return AskDto.makeDefault(true);
+    }
+
+    public void handleCreatePaymentEvent(CreatePaymentEvent event) {
+        Order order = orderRepository.findById(event.getOrderId())
+                .orElseThrow(() -> new OrderNotFoundException("Order not found"));
+
+        if ("SUCCESS".equals(event.getPaymentStatus())) {
+            order.setStatus(OrderStatus.PAID);
+        } else if ("FAILED".equals(event.getPaymentStatus())) {
+            order.setStatus(OrderStatus.CANCELLED);
+        }
+
+        orderRepository.save(order);
     }
 
     private List<OrderItem> convertOrderItems(OrderRequest orderDto, Order order) {

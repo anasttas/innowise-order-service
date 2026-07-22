@@ -9,19 +9,27 @@ import com.kharlamova.order_service.exception.OrderNotFoundException;
 import com.kharlamova.order_service.mapper.OrderMapper;
 import com.kharlamova.order_service.repository.ItemRepository;
 import com.kharlamova.order_service.repository.OrderRepository;
+import com.kharlamova.order_service.security.UserPrincipal;
 import com.kharlamova.order_service.service.impl.OrderServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +53,8 @@ class OrderServiceTest {
 
     @Test
     void getOrder_shouldReturnOrderResponse() {
+        UserPrincipal principal = new UserPrincipal(10L, "USER");
+
         Order order = Order.builder()
                 .id(1L)
                 .userId(10L)
@@ -65,7 +75,7 @@ class OrderServiceTest {
         when(orderMapper.makeOrderDto(order, userDto))
                 .thenReturn(response);
 
-        OrderResponse result = orderService.getOrder(1L);
+        OrderResponse result = orderService.getOrder(1L, principal);
 
         assertNotNull(result);
 
@@ -75,12 +85,14 @@ class OrderServiceTest {
 
     @Test
     void getOrder_shouldThrowException_whenOrderNotFound() {
+        UserPrincipal principal = new UserPrincipal(10L, "USER");
+
         when(orderRepository.findById(1L))
                 .thenReturn(Optional.empty());
 
         assertThrows(
                 OrderNotFoundException.class,
-                () -> orderService.getOrder(1L)
+                () -> orderService.getOrder(1L, principal)
         );
 
         verify(orderRepository).findById(1L);
@@ -88,6 +100,7 @@ class OrderServiceTest {
 
     @Test
     void createOrder_shouldCreateOrder() {
+        UserPrincipal principal = new UserPrincipal(1L, "USER");
         UserDto userDto = new UserDto();
         userDto.setId(1L);
         userDto.setEmail("test@mail.com");
@@ -127,7 +140,7 @@ class OrderServiceTest {
         when(orderMapper.makeOrderDto(savedOrder, userDto))
                 .thenReturn(response);
 
-        OrderResponse result = orderService.createOrder(request);
+        OrderResponse result = orderService.createOrder(request, principal);
 
         assertNotNull(result);
 
@@ -136,6 +149,8 @@ class OrderServiceTest {
 
     @Test
     void updateOrder_shouldUpdateOrder() {
+        UserPrincipal principal = new UserPrincipal(2L, "USER");
+
         Order order = Order.builder()
                 .id(1L)
                 .userId(1L)
@@ -175,7 +190,7 @@ class OrderServiceTest {
         when(orderMapper.makeOrderDto(order, userDto))
                 .thenReturn(response);
 
-        OrderResponse result = orderService.updateOrder(request, 1L);
+        OrderResponse result = orderService.updateOrder(request, 1L, principal);
 
         assertNotNull(result);
 
@@ -193,5 +208,128 @@ class OrderServiceTest {
         AskDto result = orderService.deleteOrder(1L);
 
         verify(orderRepository).delete(order);
+    }
+
+    @Test
+    void getAllOrders_shouldReturnOrdersPage() {
+        Order order = Order.builder()
+                .id(1L)
+                .userId(10L)
+                .status(OrderStatus.NEW)
+                .totalPrice(BigDecimal.valueOf(100))
+                .build();
+
+        UserDto userDto = UserDto.builder()
+                .id(10L)
+                .email("test@mail.com")
+                .build();
+
+        OrderResponse response = new OrderResponse();
+
+        response.setUser(userDto);
+
+        Page<Order> orderPage = new PageImpl<>(
+                List.of(order)
+        );
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(orderRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(orderPage);
+
+        when(userServiceClient.getUserById(10L)).thenReturn(userDto);
+
+        when(orderMapper.makeOrderDto(order, userDto)).thenReturn(response);
+
+        Page<OrderResponse> result =
+                orderService.getAllOrders(
+                        pageable,
+                        OrderStatus.NEW,
+                        LocalDateTime.now().minusDays(1),
+                        LocalDateTime.now()
+                );
+
+        assertNotNull(result);
+
+        assertEquals(1, result.getContent().size());
+
+        assertEquals(
+                userDto,
+                result.getContent()
+                        .get(0)
+                        .getUser()
+        );
+
+        verify(orderRepository)
+                .findAll(any(Specification.class), eq(pageable));
+
+        verify(userServiceClient).getUserById(10L);
+
+        verify(orderMapper).makeOrderDto(order, userDto);
+    }
+
+    @Test
+    void getAllOrdersByUserId_shouldReturnOrdersPage() {
+        Long userId = 10L;
+
+        Order order = Order.builder()
+                .id(1L)
+                .userId(userId)
+                .status(OrderStatus.NEW)
+                .totalPrice(BigDecimal.valueOf(200))
+                .build();
+
+        UserDto userDto = UserDto.builder()
+                .id(userId)
+                .email("test@mail.com")
+                .build();
+
+        OrderResponse response = new OrderResponse();
+        response.setUser(userDto);
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Page<Order> orderPage = new PageImpl<>(
+                List.of(order)
+        );
+
+        when(orderRepository.findOrderByUserId(userId, pageable))
+                .thenReturn(orderPage);
+
+        when(userServiceClient.getUserById(userId))
+                .thenReturn(userDto);
+
+        when(orderMapper.makeOrderDto(order, userDto))
+                .thenReturn(response);
+
+        Page<OrderResponse> result =
+                orderService.getAllOrdersByUserId(
+                        userId,
+                        pageable
+                );
+
+        assertNotNull(result);
+
+        assertEquals(
+                1,
+                result.getContent().size()
+        );
+
+        assertEquals(
+                userDto,
+                result.getContent()
+                        .get(0)
+                        .getUser()
+        );
+
+        verify(orderRepository)
+                .findOrderByUserId(
+                        userId,
+                        pageable
+                );
+
+        verify(userServiceClient).getUserById(userId);
+
+        verify(orderMapper).makeOrderDto(order, userDto);
     }
 }

@@ -18,8 +18,6 @@ public interface OrderMapper {
     @Mapping(target = "updatedAt", source = "order.updatedAt")
     OrderResponse makeOrderDto(Order order, UserDto user);
 
-    Order makeOrder(OrderRequest orderRequest);
-
     @Mapping(target = "itemId", source = "item.id")
     OrderItemResponse makeOrderItemDto(OrderItem orderItem);
 }

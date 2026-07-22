@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 public class ItemController {
     private final ItemService itemService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @GetMapping
     public ResponseEntity<Page<ItemDto>> getAllItems(Pageable pageable,
                                                       @RequestParam(required = false) String name,
@@ -32,11 +34,13 @@ public class ItemController {
                 .body(itemDtos);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     @GetMapping("/{item_id}")
     public ResponseEntity<ItemDto> getItemById(@PathVariable("item_id") Long id) {
         return ResponseEntity.ok(itemService.getItem(id));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ItemDto> addItem(@RequestBody @Valid ItemDto itemDto) {
         ItemDto createdItem = itemService.createItem(itemDto);
@@ -46,6 +50,7 @@ public class ItemController {
                 .body(createdItem);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @PatchMapping("/{item_id}")
     public ResponseEntity<ItemDto> updateItem(@PathVariable("item_id") Long itemId,
                                                      @RequestBody @Valid ItemDto itemDto
@@ -57,6 +62,7 @@ public class ItemController {
                 .body(updatedItem);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN')")
     @DeleteMapping("/{item_id}")
     public ResponseEntity<AskDto> deleteItem(@PathVariable("item_id") Long itemId) {
         AskDto deletedUserDto = itemService.deleteItem(itemId);

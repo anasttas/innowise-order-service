@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -68,6 +69,10 @@ class ItemIntegrationTest {
         jdbcTemplate.execute("TRUNCATE TABLE items RESTART IDENTITY CASCADE");
     }
 
+    @WithMockUser(
+            username = "test",
+            roles = {"ADMIN"}
+    )
     @Test
     void shouldCreateItemAndSaveToDatabase() throws Exception {
 
@@ -91,6 +96,10 @@ class ItemIntegrationTest {
                 .isEqualByComparingTo(BigDecimal.valueOf(1500));
     }
 
+    @WithMockUser(
+            username = "test",
+            roles = {"ADMIN"}
+    )
     @Test
     void shouldReturnItemById() throws Exception {
 
@@ -106,6 +115,10 @@ class ItemIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Laptop"));
     }
 
+    @WithMockUser(
+            username = "test",
+            roles = {"ADMIN"}
+    )
     @Test
     void shouldReturnAllItems() throws Exception {
 
@@ -122,6 +135,10 @@ class ItemIntegrationTest {
                 .andExpect(jsonPath("$.content.length()").value(1));
     }
 
+    @WithMockUser(
+            username = "test",
+            roles = {"ADMIN"}
+    )
     @Test
     void shouldUpdateItem() throws Exception {
 
@@ -149,6 +166,10 @@ class ItemIntegrationTest {
                 .isEqualByComparingTo(BigDecimal.valueOf(2000));
     }
 
+    @WithMockUser(
+            username = "test",
+            roles = {"ADMIN"}
+    )
     @Test
     void shouldDeleteItem() throws Exception {
 

@@ -11,12 +11,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -135,5 +142,53 @@ class ItemServiceTest {
         itemService.deleteItem(1L);
 
         verify(itemRepository).delete(item);
+    }
+
+    @Test
+    void getAllItems_shouldReturnFilteredItems() {
+        Item item = Item.builder()
+                .id(1L)
+                .name("Laptop")
+                .price(BigDecimal.valueOf(1000))
+                .build();
+
+        ItemDto dto = ItemDto.builder()
+                .id(1L)
+                .name("Laptop")
+                .price(BigDecimal.valueOf(1000))
+                .build();
+
+
+        Page<Item> itemPage = new PageImpl<>(
+                List.of(item)
+        );
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(itemRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(itemPage);
+
+        when(itemMapper.makeItemDto(item)).thenReturn(dto);
+
+        Page<ItemDto> result = itemService.getAllItems(
+                "Lap",
+                BigDecimal.valueOf(500),
+                BigDecimal.valueOf(1500),
+                pageable
+        );
+
+        assertNotNull(result);
+
+        assertEquals(1, result.getContent().size());
+
+        assertEquals(
+                "Laptop",
+                result.getContent()
+                        .get(0)
+                        .getName()
+        );
+
+        verify(itemRepository).findAll(any(Specification.class), eq(pageable));
+
+        verify(itemMapper).makeItemDto(item);
     }
 }
